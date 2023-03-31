@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\IndexController;
+use App\Http\Controllers\InvoiceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,6 +15,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [ IndexController::class, 'index' ]);
+
+Route::get('/users/{user}/invoices', [ InvoiceController::class, 'index' ]);
+
+Route::get('/users/{user}/invoices/new', [ InvoiceController::class, 'emptyDetails' ]);
+
+Route::get('/users/{user}/invoices/{invoice}', [ InvoiceController::class, 'details' ]);

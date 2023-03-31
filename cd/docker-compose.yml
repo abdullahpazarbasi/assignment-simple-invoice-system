@@ -5,11 +5,11 @@ networks:
     driver: bridge
 
 services:
-  php:
+  webappphp:
     build:
       context: ../
-      dockerfile: cd/php/Dockerfile
-    container_name: assignment-php
+      dockerfile: cd/webapp/php/Dockerfile
+    container_name: assignment-webapp-php
     networks:
       - assignment
     ports:
@@ -20,4 +20,22 @@ services:
         target: /var/www/assignment/
         read_only: false
     working_dir: /var/www/assignment
+    restart: unless-stopped
+  webappmysql:
+    image: mysql:5.7
+    container_name: assignment-webapp-mysql
+    networks:
+      - assignment
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: assignment
+      MYSQL_ROOT_PASSWORD: Pas5w0rd
+      MYSQL_PASSWORD: Pas5w0rd
+      MYSQL_USER: assignment
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    # volumes:
+    #   - ./mysql/my.cnf:/etc/mysql/my.cnf
+    #   - ./mysql/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
     restart: unless-stopped

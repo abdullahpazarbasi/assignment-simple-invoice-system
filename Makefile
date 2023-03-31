@@ -1,5 +1,5 @@
 up:
-	cd cd && docker-compose up -d --build && docker-compose exec php composer install
+	cd cd && docker-compose up -d --build && docker-compose exec webappphp composer install && sleep 60 && docker-compose exec webappphp php artisan migrate:fresh --seed
 
 down:
 	cd cd && docker-compose down
@@ -14,4 +14,4 @@ restart:
 	cd cd && docker-compose restart
 
 console:
-	cd cd && docker-compose exec --interactive --tty php /bin/sh
+	cd cd && docker-compose exec --interactive --tty webappphp /bin/sh

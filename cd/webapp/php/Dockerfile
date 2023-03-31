@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
-RUN docker-php-ext-install bcmath mbstring
+RUN docker-php-ext-install bcmath mbstring pdo_mysql
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -22,21 +22,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup
 RUN sed -i 's/www-data/root/g' /etc/nginx/nginx.conf
 RUN sed -i 's/www-data/root/g' /usr/local/etc/php-fpm.d/www.conf
-COPY cd/nginx/conf.d/default.conf /etc/nginx/sites-available/default
-COPY cd/php/local.ini /usr/local/etc/php/conf.d/local.ini
+COPY cd/webapp/nginx/default.conf /etc/nginx/sites-available/default
+COPY cd/webapp/php/local.ini /usr/local/etc/php/conf.d/local.ini
 
 RUN echo "#!/bin/sh\n\nnginx -t\nservice nginx start\nphp-fpm -R -F" > /custom-entrypoint.sh \
     && chmod +x /custom-entrypoint.sh
-
-# Create system user to run Composer and Artisan Commands
-# RUN addgroup --gid $gid $user \
-#     && adduser --disabled-password --gecos '' --home /home/$user --uid $uid --gid $gid $user \
-#     && adduser $user www-data \
-#     && adduser $user sudo \
-#     && adduser $user root
-# RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-# RUN mkdir -p /home/$user/.composer \
-#     && chown -R $user:$user /home/$user
 
 EXPOSE 80
 
