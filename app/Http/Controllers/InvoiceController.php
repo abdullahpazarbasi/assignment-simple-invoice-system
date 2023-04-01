@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\User;
+use App\Models\ViewModels\InvoiceSummary;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Validation\ValidationException;
 
 class InvoiceController extends Controller
@@ -64,6 +66,11 @@ class InvoiceController extends Controller
                    ->route('single-invoice', [ 'user' => $user, 'invoice' => 'new' ])
                    ->with('failure', 'Storing failed');
         }
+
+        Redis::publish('invoice-saved', json_encode([
+            'user_id' => $user->id,
+            'invoice_id' => $invoice->id,
+        ]));
 
         return redirect()
                ->route('single-invoice', [ 'user' => $user, 'invoice' => $invoice ])
@@ -136,7 +143,34 @@ class InvoiceController extends Controller
                    ->with('failure', 'Storing failed');
         }
 
+        Redis::publish('invoice-saved', json_encode([
+            'user_id' => $user->id,
+            'invoice_id' => $invoice->id,
+        ]));
+
         return back()
                ->with('success', 'Updated');
+    }
+
+    public function getSummary(Request $request, User $user, Invoice $invoice) {
+        $invoiceItems = $invoice->items()->getResults();
+        $totals = [];
+        /** @var InvoiceItem $invoiceItem */
+        foreach ($invoiceItems as $invoiceItem) {
+            $currencyCode = $invoiceItem->subtotal_currency_code;
+            if (!isset($totals[$currencyCode])) {
+                $totals[$currencyCode] = 0;
+            }
+            $totals[$currencyCode] += $invoiceItem->subtotal_amount;
+        }
+        $summary = new InvoiceSummary(
+            $user->id,
+            $invoice->id,
+            $invoice->number,
+            $totals[$currencyCode],
+            $currencyCode
+        );
+
+        return response()->json($summary->normalize());
     }
 }

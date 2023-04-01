@@ -39,3 +39,14 @@ services:
     #   - ./mysql/my.cnf:/etc/mysql/my.cnf
     #   - ./mysql/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
     restart: unless-stopped
+  redis:
+    build:
+      context: ../
+      dockerfile: cd/redis/Dockerfile
+    container_name: assignment-redis
+    networks:
+      - assignment
+    ports:
+      - "6379:6379/tcp"
+    hostname: redis
+    restart: unless-stopped
