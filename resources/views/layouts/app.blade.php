@@ -9,10 +9,11 @@
     </title>
 
     <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 
     <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 
     <style>
         body {
@@ -32,6 +33,22 @@
 </nav>
 
 <div class="container">
+
+    @if(session()->has('success'))
+        <div class="alert alert-success mt-3" role="alert">
+
+            {{ session()->get('success') }}
+
+        </div>
+    @endif
+
+    @if(session()->has('failure'))
+        <div class="alert alert-danger mt-3" role="alert">
+
+            {{ session()->get('failure') }}
+
+        </div>
+    @endif
 
     @yield('content')
 

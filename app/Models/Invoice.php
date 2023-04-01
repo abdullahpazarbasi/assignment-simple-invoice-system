@@ -13,7 +13,7 @@ class Invoice extends Model
         'number',
     ];
 
-    public function client() {
+    public function user() {
         return $this->belongsTo('App\Models\User');
     }
 

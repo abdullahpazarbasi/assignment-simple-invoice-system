@@ -6,7 +6,8 @@
 
 @section('navbarlinks')
     <a href="/"><span class="navbar-brand mb-0 h1">Users</span></a>
-    <a href="/users/1/invoices/new"><span class="btn btn-primary">Create Invoice</span></a>
+    <a href="/users/{{$user->id}}/invoices"><span class="navbar-brand mb-0 h2">Invoices</span></a>
+    <a href="/users/{{$user->id}}/invoices/new"><span class="btn btn-primary">New Invoice</span></a>
 @endsection
 
 @section('content')
@@ -14,7 +15,9 @@
     <div class="row mt-3">
         <div class="col-12 align-self-center">
             <ul class="list-group">
-                <li class="list-group-item">Invoice 1 <a href="/users/1/invoices/1">View Invoice</a></li>
+                @foreach($invoices as $invoice)
+                    <li class="list-group-item">Invoice with number "{{$invoice->number}}" <a href="/users/{{$user->id}}/invoices/{{$invoice->id}}">details</a></li>
+                @endforeach
             </ul>
         </div>
     </div>

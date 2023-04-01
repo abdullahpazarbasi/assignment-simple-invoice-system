@@ -17,8 +17,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [ IndexController::class, 'index' ]);
 
-Route::get('/users/{user}/invoices', [ InvoiceController::class, 'index' ]);
+Route::get('/users/{user}/invoices', [ InvoiceController::class, 'list' ]);
 
-Route::get('/users/{user}/invoices/new', [ InvoiceController::class, 'emptyDetails' ]);
+Route::get('/users/{user}/invoices/new', [ InvoiceController::class, 'getBlankDetails' ]);
 
-Route::get('/users/{user}/invoices/{invoice}', [ InvoiceController::class, 'details' ]);
+Route::post('/users/{user}/invoices', [ InvoiceController::class, 'store' ]);
+
+Route::get('/users/{user}/invoices/{invoice}', [ InvoiceController::class, 'getDetails' ])->name('single-invoice');
+
+Route::put('/users/{user}/invoices/{invoice}', [ InvoiceController::class, 'save' ]);
