@@ -39,7 +39,7 @@ class InvoiceController extends Controller
             $request->validate([
                 'number' => [ 'required', 'string' ],
                 'subtotal_amount_new' => [ 'required', 'numeric' ],
-                'subtotal_currency_code_new' => [ 'required', 'string', 'min:3', 'max:3' ],
+                'subtotal_currency_code_new' => [ 'required_with:subtotal_amount_new', 'string', 'min:3', 'max:3' ],
             ]);
         } catch (ValidationException $e) {
             return redirect()
@@ -47,20 +47,22 @@ class InvoiceController extends Controller
                    ->with('failure', sprintf('Bad request: %s', $e->getMessage()));
         }
 
-        $invoice = new Invoice();
-        $invoice->number = $request->input('number');
-        if (!$user->invoices()->save($invoice)) {
+        $user->getConnection()->beginTransaction();
+        try {
+            $invoice = new Invoice();
+            $invoice->number = $request->input('number');
+            $user->invoices()->save($invoice);
+            $invoiceItem = new InvoiceItem();
+            $invoiceItem->subtotal_amount = $request->input('subtotal_amount_new');
+            $invoiceItem->subtotal_currency_code = $request->input('subtotal_currency_code_new');
+            $invoice->items()->save($invoiceItem);
+            $user->getConnection()->commit();
+        } catch (\Throwable $th) {
+            $user->getConnection()->rollBack();
+
             return redirect()
                    ->route('single-invoice', [ 'user' => $user, 'invoice' => 'new' ])
                    ->with('failure', 'Storing failed');
-        }
-        $invoiceItem = new InvoiceItem();
-        $invoiceItem->subtotal_amount = $request->input('subtotal_amount_new');
-        $invoiceItem->subtotal_currency_code = $request->input('subtotal_currency_code_new');
-        if (!$invoice->items()->save($invoiceItem)) {
-            return redirect()
-                   ->route('single-invoice', [ 'user' => $user, 'invoice' => $invoice ])
-                   ->with('failure', 'Item storing failed');
         }
 
         return redirect()
@@ -86,49 +88,52 @@ class InvoiceController extends Controller
                    ->with('failure', sprintf('Bad request: %s', $e->getMessage()));
         }
 
-        $invoice->number = $request->input('number');
-        if (!$invoice->save()) {
-            return redirect()
-                   ->route('single-invoice', [ 'user' => $user, 'invoice' => $invoice ])
-                   ->with('failure', 'Storing failed');
-        }
-        $subtotalAmountNew = $request->input('subtotal_amount_new');
-        $removableItems = (array)$request->input('removable_item', []);
-        $removableInvoicItemIds = array_keys(array_filter($removableItems, function ($value) { return $value === '1'; }));
-        /** @var \Illuminate\Database\Eloquent\Collection $previousInvoiceItems */
-        $previousInvoiceItems = $invoice->items()->getResults();
-        if ($subtotalAmountNew === null) {
-            if (count($removableInvoicItemIds) >= count($previousInvoiceItems)) {
-                return redirect()
-                       ->route('single-invoice', [ 'user' => $user, 'invoice' => $invoice ])
-                       ->with('failure', 'No item will remain');
-            }
-        } else {
-            $newInvoiceItem = new InvoiceItem();
-            $newInvoiceItem->subtotal_amount = $subtotalAmountNew;
-            $newInvoiceItem->subtotal_currency_code = $request->input('subtotal_currency_code_new');
-            if (!$invoice->items()->save($newInvoiceItem)) {
-                return redirect()
-                       ->route('single-invoice', [ 'user' => $user, 'invoice' => $invoice ])
-                       ->with('failure', 'Item storing failed');
-            }
-        }
-        $subtotalAmounts = $request->input('subtotal_amount', []);
-        $subtotalCurrencyCodes = $request->input('subtotal_currency_code', []);
-        foreach ($subtotalAmounts as $invoiceItemId => $subtotalAmount) {
-            $invoiceItem = $previousInvoiceItems->find($invoiceItemId);
-            if ($invoiceItem === null) {
-                return redirect()
-                       ->route('single-invoice', [ 'user' => $user, 'invoice' => $invoice ])
-                       ->with('failure', sprintf('Unexpected item ID %s', $invoiceItemId));
-            }
-            if (in_array($invoiceItemId, $removableInvoicItemIds)) {
-                $invoiceItem->delete();
+        $user->getConnection()->beginTransaction();
+        try {
+            $invoice->number = $request->input('number');
+            $invoice->save();
+            $subtotalAmountNew = $request->input('subtotal_amount_new');
+            $removableItems = (array)$request->input('removable_item', []);
+            $removableInvoicItemIds = array_keys(array_filter($removableItems, function ($value) { return $value === '1'; }));
+            /** @var \Illuminate\Database\Eloquent\Collection $previousInvoiceItems */
+            $previousInvoiceItems = $invoice->items()->getResults();
+            if ($subtotalAmountNew === null) {
+                if (count($removableInvoicItemIds) >= count($previousInvoiceItems)) {
+                    $user->getConnection()->rollBack();
+
+                    return back()
+                           ->with('failure', 'No item will remain');
+                }
             } else {
-                $invoiceItem->subtotal_amount = $subtotalAmount;
-                $invoiceItem->subtotal_currency_code = $subtotalCurrencyCodes[$invoiceItemId];
-                $invoiceItem->save();
+                $newInvoiceItem = new InvoiceItem();
+                $newInvoiceItem->subtotal_amount = $subtotalAmountNew;
+                $newInvoiceItem->subtotal_currency_code = $request->input('subtotal_currency_code_new');
+                $invoice->items()->save($newInvoiceItem);
             }
+            $subtotalAmounts = $request->input('subtotal_amount', []);
+            $subtotalCurrencyCodes = $request->input('subtotal_currency_code', []);
+            foreach ($subtotalAmounts as $invoiceItemId => $subtotalAmount) {
+                $invoiceItem = $previousInvoiceItems->find($invoiceItemId);
+                if ($invoiceItem === null) {
+                    $user->getConnection()->rollBack();
+
+                    return back()
+                           ->with('failure', sprintf('Unexpected item ID %s', $invoiceItemId));
+                }
+                if (in_array($invoiceItemId, $removableInvoicItemIds)) {
+                    $invoiceItem->delete();
+                } else {
+                    $invoiceItem->subtotal_amount = $subtotalAmount;
+                    $invoiceItem->subtotal_currency_code = $subtotalCurrencyCodes[$invoiceItemId];
+                    $invoiceItem->save();
+                }
+            }
+            $user->getConnection()->commit();
+        } catch (\Throwable $th) {
+            $user->getConnection()->rollBack();
+
+            return back()
+                   ->with('failure', 'Storing failed');
         }
 
         return back()

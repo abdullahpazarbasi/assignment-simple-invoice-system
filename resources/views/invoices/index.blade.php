@@ -16,7 +16,7 @@
         <div class="col-12 align-self-center">
             <ul class="list-group">
                 @foreach($invoices as $invoice)
-                    <li class="list-group-item">Invoice with number "{{$invoice->number}}" <a href="/users/{{$user->id}}/invoices/{{$invoice->id}}">details</a></li>
+                    <li class="list-group-item">Invoice #{{$invoice->id}} with number "{{$invoice->number}}" <a href="/users/{{$user->id}}/invoices/{{$invoice->id}}">details</a></li>
                 @endforeach
             </ul>
         </div>
