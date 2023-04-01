@@ -11,12 +11,17 @@
 @section('navbarlinks')
     <a href="/"><span class="navbar-brand mb-0 h1">Users</span></a>
     <a href="/users/{{$user->id}}/invoices"><span class="navbar-brand mb-0 h2">Invoices</span></a>
-    <a href="/users/{{$user->id}}/invoices/new"><span class="btn btn-primary">New Invoice</span></a>
+    @isset($invoice)
+        <a href="/users/{{$user->id}}/invoices/new"><span class="btn btn-primary">New Invoice</span></a>
+    @endisset
 @endsection
 
 @section('content')
 
-    <form action="/users/{{$user->id}}/invoices{{isset($invoice) ? '/' . $invoice->id : ''}}" method="{{isset($invoice) ? 'put' : 'post'}}" class="mt-3">
+    <form action="/users/{{$user->id}}/invoices{{isset($invoice) ? '/' . $invoice->id : ''}}" method="post" class="mt-3">
+        @isset($invoice)
+            <input type="hidden" name="_method" value="put" />
+        @endisset
         @csrf
         <div class="form-group">
             <label for="number">Invoice Number</label>
@@ -25,7 +30,7 @@
         @foreach($invoiceItems as $invoiceItem)
             <div class="form-group row mt-1">
                 <div class="col">
-                    <span class="control-label">Subtotal {{$invoiceItem->id}}</span>
+                    <span class="control-label">Subtotal #{{$invoiceItem->id}}</span>
                 </div>
                 <div class="col">
                     <label for="subtotal_amount_{{$invoiceItem->id}}" class="control-label">Amount</label>
@@ -47,11 +52,11 @@
             </div>
             <div class="col">
                 <label for="subtotal_amount_new" class="control-label">Amount</label>
-                <input type="text" class="form-control" name="subtotal_amount[new]" id="subtotal_amount_new" value="" placeholder="123.00">
+                <input type="text" class="form-control" name="subtotal_amount_new" id="subtotal_amount_new" value="" placeholder="123.00">
             </div>
             <div class="col">
                 <label for="subtotal_currency_code_new" class="control-label">Currency Code</label>
-                <input type="text" class="form-control" name="subtotal_currency_code[new]" id="subtotal_currency_code_new" value="" placeholder="TRY">
+                <input type="text" class="form-control" name="subtotal_currency_code_new" id="subtotal_currency_code_new" value="" placeholder="TRY">
             </div>
         </div>
         <div class="form-group mt-5">

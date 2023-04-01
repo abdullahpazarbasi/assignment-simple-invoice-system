@@ -25,4 +25,4 @@ Route::post('/users/{user}/invoices', [ InvoiceController::class, 'store' ]);
 
 Route::get('/users/{user}/invoices/{invoice}', [ InvoiceController::class, 'getDetails' ])->name('single-invoice');
 
-Route::put('/users/{user}/invoices/{invoice}', [ InvoiceController::class, 'save' ]);
+Route::put('/users/{user}/invoices/{invoice}', [ InvoiceController::class, 'update' ]);
