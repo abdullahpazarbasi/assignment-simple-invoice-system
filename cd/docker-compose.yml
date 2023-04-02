@@ -50,3 +50,18 @@ services:
       - "6379:6379/tcp"
     hostname: redis
     restart: unless-stopped
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: assignment-webapp-phpmyadmin
+    networks:
+      - assignment
+    ports:
+      - "8090:80"
+    environment:
+      PMA_ARBITRARY: 0
+      PMA_HOST: webappmysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: Pas5w0rd
+    depends_on:
+      - webappmysql
+    restart: unless-stopped
