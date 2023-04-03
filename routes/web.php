@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\UserWebAppController;
-use App\Http\Controllers\InvoiceWebAppController;
+use App\Http\Controllers\UserWebAppFrontController;
+use App\Http\Controllers\InvoiceWebAppFrontController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,12 +17,12 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', [UserWebAppController::class, 'list']);
+Route::get('/', [UserWebAppFrontController::class, 'list']);
 
-Route::get('/users/{user}/invoices', [InvoiceWebAppController::class, 'list']);
+Route::get('/users/{user}/invoices', [InvoiceWebAppFrontController::class, 'list']);
 
-Route::post('/users/{user}/invoices', [InvoiceWebAppController::class, 'store']);
+Route::post('/users/{user}/invoices', [InvoiceWebAppFrontController::class, 'store']);
 
-Route::get('/users/{user}/invoices/{invoice}', [InvoiceWebAppController::class, 'getDetails'])->name('single-invoice');
+Route::get('/users/{user}/invoices/{invoice}', [InvoiceWebAppFrontController::class, 'getDetails'])->name('single-invoice');
 
-Route::put('/users/{user}/invoices/{invoice}', [InvoiceWebAppController::class, 'update']);
+Route::put('/users/{user}/invoices/{invoice}', [InvoiceWebAppFrontController::class, 'update']);
