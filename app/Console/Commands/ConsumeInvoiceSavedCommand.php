@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Models\ClientMovement;
@@ -44,15 +46,15 @@ class ConsumeInvoiceSavedCommand extends Command
         try {
             Redis::subscribe(['invoice-saved'], function ($message) {
                 echo $message . PHP_EOL;
-    
+
                 $eventPayload = json_decode($message, true, 512, JSON_THROW_ON_ERROR);
                 $userId = $eventPayload['user_id'];
                 $invoiceId = $eventPayload['invoice_id'];
                 $response = Http::timeout(10)
-                            ->get(sprintf('http://127.0.0.1:80/api/users/%s/invoices/%s/summary', $userId, $invoiceId))
-                            ->throw();
+                    ->get(sprintf('http://127.0.0.1:80/api/users/%s/invoices/%s/summary', $userId, $invoiceId))
+                    ->throw();
                 $summary = json_decode($response->body(), true, 512, JSON_THROW_ON_ERROR);
-    
+
                 $clientMovement = ClientMovement::query()->firstOrNew([
                     'invoice_number' => $summary['invoice_number'],
                 ]);

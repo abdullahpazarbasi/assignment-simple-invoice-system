@@ -1,7 +1,9 @@
 <?php
 
-use App\Http\Controllers\IndexController;
-use App\Http\Controllers\InvoiceController;
+declare(strict_types=1);
+
+use App\Http\Controllers\UserWebAppController;
+use App\Http\Controllers\InvoiceWebAppController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,14 +17,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', [ IndexController::class, 'index' ]);
+Route::get('/', [UserWebAppController::class, 'list']);
 
-Route::get('/users/{user}/invoices', [ InvoiceController::class, 'list' ]);
+Route::get('/users/{user}/invoices', [InvoiceWebAppController::class, 'list']);
 
-Route::get('/users/{user}/invoices/new', [ InvoiceController::class, 'getBlankDetails' ]);
+Route::get('/users/{user}/invoices/new', [InvoiceWebAppController::class, 'getBlankDetails']);
 
-Route::post('/users/{user}/invoices', [ InvoiceController::class, 'store' ]);
+Route::post('/users/{user}/invoices', [InvoiceWebAppController::class, 'store']);
 
-Route::get('/users/{user}/invoices/{invoice}', [ InvoiceController::class, 'getDetails' ])->name('single-invoice');
+Route::get('/users/{user}/invoices/{invoice}', [InvoiceWebAppController::class, 'getDetails'])->name('single-invoice');
 
-Route::put('/users/{user}/invoices/{invoice}', [ InvoiceController::class, 'update' ]);
+Route::put('/users/{user}/invoices/{invoice}', [InvoiceWebAppController::class, 'update']);

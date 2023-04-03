@@ -1,6 +1,8 @@
 <?php
 
-use App\Http\Controllers\InvoiceController;
+declare(strict_types=1);
+
+use App\Http\Controllers\InvoiceWebApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,4 +21,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/users/{user}/invoices/{invoice}/summary', [ InvoiceController::class, 'getSummary' ]);
+Route::get('/users/{user}/invoices/{invoice}/summary', [InvoiceWebApiController::class, 'getSummary']);

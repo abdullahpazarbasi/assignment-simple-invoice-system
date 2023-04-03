@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +16,8 @@ class InvoiceItem extends Model
         'subtotal_currency_code',
     ];
 
-    public function invoice() {
+    public function invoice()
+    {
         return $this->belongsTo('App\Models\Invoice');
     }
 }

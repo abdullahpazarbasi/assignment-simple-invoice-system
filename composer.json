@@ -4,7 +4,9 @@
     "description": "Assignment",
     "license": "properitary",
     "require": {
-        "php": "^7.3|^8.0",
+        "php": ">=7.4.33",
+        "ext-json": "*",
+        "ext-redis": "*",
         "fruitcake/laravel-cors": "^2.0",
         "guzzlehttp/guzzle": "^7.0.1",
         "laravel/framework": "^8.75",

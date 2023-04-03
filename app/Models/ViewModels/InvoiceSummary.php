@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\ViewModels;
 
-class InvoiceSummary {
+class InvoiceSummary
+{
     protected string $userId;
     protected string $invoiceId;
     protected string $invoiceNumber;
@@ -15,8 +18,7 @@ class InvoiceSummary {
         string $invoiceNumber,
         float $totalAmount,
         string $totalCurrencyCode
-    )
-    {
+    ) {
         $this->userId = $userId;
         $this->invoiceId = $invoiceId;
         $this->invoiceNumber = $invoiceNumber;

@@ -1,13 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
 
-class IndexController extends Controller
+class UserWebAppController extends Controller
 {
-    public function index(Request $request) {
+    public function list(Request $request)
+    {
         $users = User::all();
 
         return view('index')->with('users', $users);
