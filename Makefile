@@ -15,3 +15,9 @@ restart:
 
 console:
 	cd cd && docker-compose exec --interactive --tty webappphp sh
+
+sniff:
+	cd cd && docker-compose exec webappphp php vendor/bin/phpcs /var/www/assignment
+
+beautify-fix:
+	cd cd && docker-compose exec webappphp php vendor/bin/phpcbf /var/www/assignment
