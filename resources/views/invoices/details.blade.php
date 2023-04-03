@@ -52,11 +52,11 @@
             </div>
             <div class="col">
                 <label for="subtotal_amount_new" class="control-label">Amount</label>
-                <input type="text" class="form-control" name="subtotal_amount_new" id="subtotal_amount_new" value="" placeholder="123.00">
+                <input type="text" class="form-control" name="subtotal_amount_new" id="subtotal_amount_new" value="" placeholder="">
             </div>
             <div class="col">
                 <label for="subtotal_currency_code_new" class="control-label">Currency Code</label>
-                <input type="text" class="form-control" name="subtotal_currency_code_new" id="subtotal_currency_code_new" value="" placeholder="TRY">
+                <input type="text" class="form-control" name="subtotal_currency_code_new" id="subtotal_currency_code_new" value="" placeholder="">
             </div>
         </div>
         <div class="form-group mt-5">

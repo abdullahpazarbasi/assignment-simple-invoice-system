@@ -24,17 +24,15 @@ class InvoiceWebAppController extends Controller
             ->with('invoices', $invoices);
     }
 
-    public function getBlankDetails(Request $request, User $user)
+    public function getDetails(Request $request, User $user, string $invoiceId)
     {
-        return view('invoices.details')
-            ->with('user', $user)
-            ->with('invoice', null)
-            ->with('invoiceItems', []);
-    }
-
-    public function getDetails(Request $request, User $user, Invoice $invoice)
-    {
-        $invoiceItems = $invoice->items()->getResults();
+        if ($invoiceId === 'new') {
+            $invoice = null;
+            $invoiceItems = [];
+        } else {
+            $invoice = Invoice::query()->findOrFail((int)$invoiceId);
+            $invoiceItems = $invoice->items()->getResults();
+        }
 
         return view('invoices.details')
             ->with('user', $user)

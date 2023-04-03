@@ -21,8 +21,6 @@ Route::get('/', [UserWebAppController::class, 'list']);
 
 Route::get('/users/{user}/invoices', [InvoiceWebAppController::class, 'list']);
 
-Route::get('/users/{user}/invoices/new', [InvoiceWebAppController::class, 'getBlankDetails']);
-
 Route::post('/users/{user}/invoices', [InvoiceWebAppController::class, 'store']);
 
 Route::get('/users/{user}/invoices/{invoice}', [InvoiceWebAppController::class, 'getDetails'])->name('single-invoice');
