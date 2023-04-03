@@ -25,10 +25,10 @@ class InvoiceWebApiController extends Controller
             $totals[$currencyCode] += $invoiceItem->subtotal_amount;
         }
         $summary = new InvoiceSummary(
-            $user->id,
-            $invoice->id,
+            (string)$user->id,
+            (string)$invoice->id,
             $invoice->number,
-            $totals[$currencyCode],
+            (float)$totals[$currencyCode],
             $currencyCode
         );
 
