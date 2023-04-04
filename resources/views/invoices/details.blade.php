@@ -62,7 +62,7 @@
             </div>
         </div>
         <div class="form-group mt-5">
-            <input type="submit" class="btn btn-primary" value="Update">
+            <input type="submit" class="btn btn-primary" value="{{isset($invoice) ? 'Update' : 'Create'}}">
         </div>
     </form>
 

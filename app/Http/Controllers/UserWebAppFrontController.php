@@ -10,9 +10,19 @@ use Illuminate\Http\Request;
 
 class UserWebAppFrontController extends Controller
 {
-    public function list(Request $request, UserServer $userService)
+    protected UserServer $userService;
+
+    /**
+     * @param UserServer $userService
+     */
+    public function __construct(UserServer $userService)
     {
-        $userCollection = $userService->list();
+        $this->userService = $userService;
+    }
+
+    public function list(Request $request)
+    {
+        $userCollection = $this->userService->list();
         $userCollectionView = [];
         foreach ($userCollection as $user) {
             $userCollectionView[] = new UserDetailsView(

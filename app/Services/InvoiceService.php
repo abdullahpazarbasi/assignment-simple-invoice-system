@@ -4,15 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\InvoiceRepository;
 use App\Contracts\InvoiceServer;
 use App\Models\DataTransferModels\InvoiceDetails;
-use App\Models\DataTransferModels\InvoiceItemDetails;
 use App\Models\DataTransferModels\InvoiceSummary;
-use App\Models\Invoice;
-use App\Models\InvoiceItem;
-use App\Models\User;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Redis\RedisManager;
 use Illuminate\Support\Facades\Validator;
 use RuntimeException;
@@ -20,16 +16,20 @@ use Throwable;
 
 class InvoiceService implements InvoiceServer
 {
+    protected InvoiceRepository $invoiceRepository;
+
     /**
      * @var RedisFactory|RedisManager
      */
     protected RedisFactory $redisFactory;
 
     /**
-     * @param RedisFactory $redisFactory
+     * @param InvoiceRepository $invoiceRepository
+     * @param RedisFactory|RedisManager $redisFactory
      */
-    public function __construct(RedisFactory $redisFactory)
+    public function __construct(InvoiceRepository $invoiceRepository, RedisFactory $redisFactory)
     {
+        $this->invoiceRepository = $invoiceRepository;
         $this->redisFactory = $redisFactory;
     }
 
@@ -39,50 +39,12 @@ class InvoiceService implements InvoiceServer
      */
     public function list(string $userId): array
     {
-        /** @var Invoice[] $invoices */
-        $invoices = Invoice::query()->where('user_id', '=', $userId)->getModels();
-        $invoiceDetailsCollection = [];
-        foreach ($invoices as $invoice) {
-            /** @var InvoiceItem $invoiceItems */
-            $invoiceItems = $invoice->items()->getResults();
-            $invoiceItemDetailsCollection = [];
-            foreach ($invoiceItems as $invoiceItem) {
-                $invoiceItemDetailsCollection[] = new InvoiceItemDetails(
-                    (string)$invoiceItem->id,
-                    $invoiceItem->subtotal_amount,
-                    $invoiceItem->subtotal_currency_code,
-                );
-            }
-            $invoiceDetailsCollection[] = new InvoiceDetails(
-                (string)$invoice->id,
-                (string)$invoice->user_id,
-                $invoice->number,
-                $invoiceItemDetailsCollection,
-            );
-        }
-
-        return $invoiceDetailsCollection;
+        return $this->invoiceRepository->findAllBelongsToUser($userId);
     }
 
-    public function getById(string $invoiceId): InvoiceDetails
+    public function get(string $invoiceId): InvoiceDetails
     {
-        $invoice = Invoice::query()->findOrFail((int)$invoiceId);
-        $invoiceItems = $invoice->items()->getResults();
-        $invoiceItemDetailsCollection = [];
-        foreach ($invoiceItems as $invoiceItem) {
-            $invoiceItemDetailsCollection[] = new InvoiceItemDetails(
-                (string)$invoiceItem->id,
-                $invoiceItem->subtotal_amount,
-                $invoiceItem->subtotal_currency_code,
-            );
-        }
-
-        return new InvoiceDetails(
-            (string)$invoice->id,
-            (string)$invoice->user_id,
-            $invoice->number,
-            $invoiceItemDetailsCollection,
-        );
+        return $this->invoiceRepository->getSingleById($invoiceId);
     }
 
     /**
@@ -117,25 +79,13 @@ class InvoiceService implements InvoiceServer
             throw new RuntimeException(implode(PHP_EOL, $validator->errors()->all()));
         }
 
-        $user = User::query()->findOrFail($userId);
-
-        $user->getConnection()->beginTransaction();
-        try {
-            $invoice = new Invoice();
-            $invoice->number = $invoiceNumber;
-            $user->invoices()->save($invoice);
-            $invoiceItem = new InvoiceItem();
-            $invoiceItem->subtotal_amount = (float)$subtotalAmount0;
-            $invoiceItem->subtotal_currency_code = $subtotalCurrencyCode0;
-            $invoice->items()->save($invoiceItem);
-            $user->getConnection()->commit();
-        } catch (Throwable $e) {
-            $user->getConnection()->rollBack();
-
-            throw $e;
-        }
-
-        $invoiceId = (string)$invoice->id;
+        $invoiceId = $this->invoiceRepository->create(
+            null,
+            $userId,
+            $invoiceNumber,
+            (float)$subtotalAmount0,
+            $subtotalCurrencyCode0,
+        );
 
         $this->dispatchInvoiceSavedEvent($userId, $invoiceId);
 
@@ -190,74 +140,73 @@ class InvoiceService implements InvoiceServer
             throw new RuntimeException(implode(PHP_EOL, $validator->errors()->all()));
         }
 
-        $invoice = Invoice::query()->findOrFail((int)$invoiceId);
-
-        $invoice->getConnection()->beginTransaction();
-        try {
-            $invoice->number = $invoiceNumber;
-            $invoice->save();
-            $removableInvoiceItemIds = array_keys(
-                array_filter($removableItems, function ($value) {
-                    return $value === '1';
-                })
-            );
-            /** @var Collection $previousInvoiceItems */
-            $previousInvoiceItems = $invoice->items()->getResults();
-            if ($subtotalAmount0 === null) {
-                if (count($removableInvoiceItemIds) >= count($previousInvoiceItems)) {
-                    $invoice->getConnection()->rollBack();
-
-                    throw new RuntimeException('No item will remain');
-                }
-            } else {
-                $newInvoiceItem = new InvoiceItem();
-                $newInvoiceItem->subtotal_amount = (float)$subtotalAmount0;
-                $newInvoiceItem->subtotal_currency_code = $subtotalCurrencyCode0;
-                $invoice->items()->save($newInvoiceItem);
+        $previousInvoiceDetails = $this->invoiceRepository->getSingleById($invoiceId);
+        $removableInvoiceItemIds = array_keys(
+            array_filter($removableItems, function ($value) {
+                return $value === '1';
+            })
+        );
+        $invoiceItems = [];
+        foreach ($subtotalAmounts as $invoiceItemId => $subtotalAmount) {
+            if (!$previousInvoiceDetails->doesItemExist((string)$invoiceItemId)) {
+                throw new RuntimeException(sprintf('Unexpected item ID %s', $invoiceItemId));
             }
-            foreach ($subtotalAmounts as $invoiceItemId => $subtotalAmount) {
-                $invoiceItem = $previousInvoiceItems->find((int)$invoiceItemId);
-                if ($invoiceItem === null) {
-                    $invoice->getConnection()->rollBack();
-
-                    throw new RuntimeException(sprintf('Unexpected item ID %s', $invoiceItemId));
-                }
-                if (in_array($invoiceItemId, $removableInvoiceItemIds)) {
-                    $invoiceItem->delete();
-                } else {
-                    $invoiceItem->subtotal_amount = (float)$subtotalAmount;
-                    $invoiceItem->subtotal_currency_code = $subtotalCurrencyCodes[$invoiceItemId];
-                    $invoiceItem->save();
-                }
+            $invoiceItem = [];
+            $invoiceItem['id'] = $invoiceItemId;
+            $invoiceItem['subtotalAmount'] = $subtotalAmount;
+            if (empty($subtotalCurrencyCodes[$invoiceItemId])) {
+                throw new RuntimeException('Inconsistency for given');
             }
-            $invoice->getConnection()->commit();
-        } catch (Throwable $e) {
-            $invoice->getConnection()->rollBack();
-
-            throw $e;
+            $invoiceItem['subtotalCurrencyCode'] = $subtotalCurrencyCodes[$invoiceItemId];
+            $invoiceItem['removable'] = in_array($invoiceItemId, $removableInvoiceItemIds);
+            $invoiceItems[] = $invoiceItem;
         }
+        if ($subtotalAmount0 !== null) {
+            $invoiceItem = [];
+            $invoiceItem['id'] = null;
+            $invoiceItem['subtotalAmount'] = $subtotalAmount0;
+            $invoiceItem['subtotalCurrencyCode'] = $subtotalCurrencyCode0;
+            $invoiceItem['removable'] = false;
+            $invoiceItems[] = $invoiceItem;
+        }
+        if (self::getNumberOfItemsWhoseFieldIs($invoiceItems, 'removable', false) === 0) {
+            throw new RuntimeException('No item will remain');
+        }
+        $this->invoiceRepository->update(
+            $invoiceId,
+            $userId,
+            $invoiceNumber,
+            $invoiceItems
+        );
 
         $this->dispatchInvoiceSavedEvent($userId, $invoiceId);
     }
 
-    public function getSummaryById(string $userId, string $invoiceId): InvoiceSummary
+    /**
+     * @param string $userId
+     * @param string $invoiceId
+     * @return InvoiceSummary
+     * @throws RuntimeException
+     */
+    public function getSummary(string $userId, string $invoiceId): InvoiceSummary
     {
-        $invoice = Invoice::query()->findOrFail($invoiceId);
-        $invoiceItems = $invoice->items()->getResults();
+        $invoiceDetails = $this->invoiceRepository->getSingleById($invoiceId);
+        if ($invoiceDetails->getUserId() !== $userId) {
+            throw new RuntimeException('Desired invoice does not belong to the user');
+        }
         $totals = [];
-        /** @var InvoiceItem $invoiceItem */
-        foreach ($invoiceItems as $invoiceItem) {
-            $currencyCode = $invoiceItem->subtotal_currency_code;
+        foreach ($invoiceDetails->getItems() as $invoiceItemDetails) {
+            $currencyCode = $invoiceItemDetails->getSubtotalCurrencyCode();
             if (!isset($totals[$currencyCode])) {
                 $totals[$currencyCode] = 0;
             }
-            $totals[$currencyCode] += $invoiceItem->subtotal_amount;
+            $totals[$currencyCode] += $invoiceItemDetails->getSubtotalAmount();
         }
 
         return new InvoiceSummary(
-            (string)$invoice->user_id,
-            (string)$invoice->id,
-            $invoice->number,
+            $invoiceDetails->getUserId(),
+            $invoiceDetails->getId(),
+            $invoiceDetails->getNumber(),
             (float)$totals[$currencyCode],
             $currencyCode
         );
@@ -272,5 +221,33 @@ class InvoiceService implements InvoiceServer
                 'invoice_id' => $invoiceId,
             ])
         );
+    }
+
+    /**
+     * @param array[] $haystack
+     * @param string $key
+     * @param mixed $value
+     * @return int
+     * @throws RuntimeException
+     */
+    protected static function getNumberOfItemsWhoseFieldIs(array $haystack, string $key, $value): int
+    {
+        $i = 0;
+        $c = 0;
+        foreach ($haystack as $item) {
+            if (!isset($item[$key])) {
+                throw new RuntimeException(sprintf(
+                    'Item whose index is %d does not have field whose key is %s',
+                    $i,
+                    $key
+                ));
+            }
+            if ($item[$key] === $value) {
+                $c++;
+            }
+            $i++;
+        }
+
+        return $c;
     }
 }

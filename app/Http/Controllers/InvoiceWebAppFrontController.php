@@ -13,12 +13,19 @@ use Throwable;
 
 class InvoiceWebAppFrontController extends Controller
 {
-    public function list(
-        Request $request,
-        string $userId,
-        InvoiceServer $invoiceService
-    ) {
-        $invoiceDetailsCollection = $invoiceService->list($userId);
+    protected InvoiceServer $invoiceService;
+
+    /**
+     * @param InvoiceServer $invoiceService
+     */
+    public function __construct(InvoiceServer $invoiceService)
+    {
+        $this->invoiceService = $invoiceService;
+    }
+
+    public function list(Request $request, string $userId)
+    {
+        $invoiceDetailsCollection = $this->invoiceService->list($userId);
         $invoiceDetailsCollectionView = [];
         foreach ($invoiceDetailsCollection as $invoiceDetails) {
             $invoiceItemDetailsCollection = $invoiceDetails->getItems();
@@ -43,16 +50,12 @@ class InvoiceWebAppFrontController extends Controller
             ->with('invoices', $invoiceDetailsCollectionView);
     }
 
-    public function getDetails(
-        Request $request,
-        string $userId,
-        string $invoiceId,
-        InvoiceServer $invoiceService
-    ) {
+    public function getDetails(Request $request, string $userId, string $invoiceId)
+    {
         if ($invoiceId === 'new') {
             $invoiceDetailsView = null;
         } else {
-            $invoiceDetails = $invoiceService->getById($invoiceId);
+            $invoiceDetails = $this->invoiceService->get($invoiceId);
             $invoiceItemDetailsCollection = $invoiceDetails->getItems();
             $invoiceItemDetailsCollectionView = [];
             foreach ($invoiceItemDetailsCollection as $invoiceItemDetails) {
@@ -75,7 +78,7 @@ class InvoiceWebAppFrontController extends Controller
             ->with('invoice', $invoiceDetailsView);
     }
 
-    public function store(Request $request, string $userId, InvoiceServer $invoiceService)
+    public function store(Request $request, string $userId)
     {
         $validator = Validator::make(
             [
@@ -96,7 +99,7 @@ class InvoiceWebAppFrontController extends Controller
         }
         $validatedParameters = $validator->validated();
         try {
-            $invoiceId = $invoiceService->store(
+            $invoiceId = $this->invoiceService->store(
                 $userId,
                 $validatedParameters['invoiceNumber'],
                 $validatedParameters['subtotalAmount0'],
@@ -113,7 +116,7 @@ class InvoiceWebAppFrontController extends Controller
             ->with('success', 'Created');
     }
 
-    public function update(Request $request, string $userId, string $invoiceId, InvoiceServer $invoiceService)
+    public function update(Request $request, string $userId, string $invoiceId)
     {
         $validator = Validator::make(
             [
@@ -140,7 +143,7 @@ class InvoiceWebAppFrontController extends Controller
         $validatedParameters = $validator->validated();
 
         try {
-            $invoiceService->update(
+            $this->invoiceService->update(
                 $userId,
                 $invoiceId,
                 $validatedParameters['invoiceNumber'],

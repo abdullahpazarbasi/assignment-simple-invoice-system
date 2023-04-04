@@ -60,4 +60,20 @@ class InvoiceDetails
     {
         return $this->items;
     }
+
+    public function getNumberOfItems(): int
+    {
+        return count($this->items);
+    }
+
+    public function doesItemExist(string $itemId): bool
+    {
+        foreach ($this->items as $item) {
+            if ($item->getId() === $itemId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

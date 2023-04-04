@@ -14,7 +14,7 @@ interface InvoiceServer
      */
     public function list(string $userId): array;
 
-    public function getById(string $invoiceId): InvoiceDetails;
+    public function get(string $invoiceId): InvoiceDetails;
 
     /**
      * @param string $userId
@@ -54,5 +54,5 @@ interface InvoiceServer
         array $removableItems
     ): void;
 
-    public function getSummaryById(string $userId, string $invoiceId): InvoiceSummary;
+    public function getSummary(string $userId, string $invoiceId): InvoiceSummary;
 }

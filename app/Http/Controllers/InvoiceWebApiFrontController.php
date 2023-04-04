@@ -10,9 +10,19 @@ use Illuminate\Http\Request;
 
 class InvoiceWebApiFrontController extends Controller
 {
-    public function getSummary(Request $request, string $userId, string $invoiceId, InvoiceServer $invoiceService)
+    protected InvoiceServer $invoiceService;
+
+    /**
+     * @param InvoiceServer $invoiceService
+     */
+    public function __construct(InvoiceServer $invoiceService)
     {
-        $summary = $invoiceService->getSummaryById($userId, $invoiceId);
+        $this->invoiceService = $invoiceService;
+    }
+
+    public function getSummary(Request $request, string $userId, string $invoiceId)
+    {
+        $summary = $this->invoiceService->getSummary($userId, $invoiceId);
         $summaryView = new InvoiceSummary(
             $summary->getUserId(),
             $summary->getInvoiceId(),

@@ -4,21 +4,25 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\UserRepository;
 use App\Contracts\UserServer;
 use App\Models\DataTransferModels\UserDetails;
-use App\Models\User;
 
 class UserService implements UserServer
 {
-    public function getById(string $userId): UserDetails
-    {
-        $user = User::query()->findOrFail($userId);
+    protected UserRepository $userRepository;
 
-        return new UserDetails(
-            (string)$user->id,
-            $user->name,
-            $user->email,
-        );
+    /**
+     * @param UserRepository $userRepository
+     */
+    public function __construct(UserRepository $userRepository)
+    {
+        $this->userRepository = $userRepository;
+    }
+
+    public function get(string $userId): UserDetails
+    {
+        return $this->userRepository->getSingleById($userId);
     }
 
     /**
@@ -26,16 +30,6 @@ class UserService implements UserServer
      */
     public function list(): array
     {
-        $users = User::all();
-        $userDetailsCollection = [];
-        foreach ($users as $user) {
-            $userDetailsCollection[] = new UserDetails(
-                (string)$user->id,
-                $user->name,
-                $user->email,
-            );
-        }
-
-        return $userDetailsCollection;
+        return $this->userRepository->findAll();
     }
 }

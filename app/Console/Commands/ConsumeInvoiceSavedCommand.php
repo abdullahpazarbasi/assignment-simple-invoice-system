@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Contracts\ClientMovementServer;
 use App\Models\ClientMovement;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
@@ -27,13 +28,17 @@ class ConsumeInvoiceSavedCommand extends Command
     protected $description = 'Consumer of event invoice_saved';
 
     /**
-     * Create a new command instance.
-     *
-     * @return void
+     * @var ClientMovementServer
      */
-    public function __construct()
+    protected ClientMovementServer $clientMovementService;
+
+    /**
+     * @param ClientMovementServer $clientMovementService
+     */
+    public function __construct(ClientMovementServer $clientMovementService)
     {
         parent::__construct();
+        $this->clientMovementService = $clientMovementService;
     }
 
     /**
@@ -55,12 +60,12 @@ class ConsumeInvoiceSavedCommand extends Command
                     ->throw();
                 $summary = json_decode($response->body(), true, 512, JSON_THROW_ON_ERROR);
 
-                $clientMovement = ClientMovement::query()->firstOrNew([
-                    'invoice_number' => $summary['invoice_number'],
-                ]);
-                $clientMovement->client_number = $summary['user_id'];
-                $clientMovement->total = sprintf('%s %s', $summary['total_amount'], $summary['total_currency_code']);
-                $clientMovement->saveOrFail();
+                $this->clientMovementService->save(
+                    $summary['user_id'],
+                    $summary['invoice_number'],
+                    (float)$summary['total_amount'],
+                    $summary['total_currency_code'],
+                );
             });
         } catch (RedisException $e) {
             return 1;

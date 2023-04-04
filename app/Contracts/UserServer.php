@@ -6,7 +6,7 @@ use App\Models\DataTransferModels\UserDetails;
 
 interface UserServer
 {
-    public function getById(string $userId): UserDetails;
+    public function get(string $userId): UserDetails;
 
     /**
      * @return UserDetails[]

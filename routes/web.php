@@ -23,6 +23,7 @@ Route::get('/users/{user}/invoices', [InvoiceWebAppFrontController::class, 'list
 
 Route::post('/users/{user}/invoices', [InvoiceWebAppFrontController::class, 'store']);
 
-Route::get('/users/{user}/invoices/{invoice}', [InvoiceWebAppFrontController::class, 'getDetails'])->name('single-invoice');
+Route::get('/users/{user}/invoices/{invoice}', [InvoiceWebAppFrontController::class, 'getDetails'])
+    ->name('single-invoice');
 
 Route::put('/users/{user}/invoices/{invoice}', [InvoiceWebAppFrontController::class, 'update']);
