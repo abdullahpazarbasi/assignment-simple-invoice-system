@@ -5,16 +5,8 @@ namespace App\Contracts;
 interface ClientMovementServer
 {
     /**
-     * @param string $userId
-     * @param string $invoiceNumber
-     * @param float $totalAmount
-     * @param string $totalCurrencyCode
+     * @param string $message
      * @return string Client Movement ID
      */
-    public function save(
-        string $userId,
-        string $invoiceNumber,
-        float $totalAmount,
-        string $totalCurrencyCode
-    ): string;
+    public function consumeInvoiceSavedEvent(string $message): string;
 }

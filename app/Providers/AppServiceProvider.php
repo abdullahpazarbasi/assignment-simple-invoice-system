@@ -30,7 +30,10 @@ class AppServiceProvider extends ServiceProvider
             return new InvoiceService(new ConcreteInvoiceRepository(), $app->get('redis'));
         });
         $this->app->bind(ClientMovementServer::class, function (Application $app) {
-            return new ClientMovementService(new ConcreteClientMovementRepository());
+            return new ClientMovementService(
+                new ConcreteClientMovementRepository(),
+                $app['config']->get('services.invoice.authority')
+            );
         });
     }
 

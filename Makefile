@@ -21,3 +21,6 @@ sniff:
 
 beautify-fix:
 	cd cd && docker-compose exec webappphp php vendor/bin/phpcbf /var/www/assignment
+
+test:
+	cd cd && docker-compose exec webappphp php artisan test

@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Contracts\InvoiceRepository;
 use App\Contracts\InvoiceServer;
+use App\Contracts\MessagePublisher;
 use App\Models\DataTransferModels\InvoiceDetails;
 use App\Models\DataTransferModels\InvoiceSummary;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
@@ -19,7 +20,7 @@ class InvoiceService implements InvoiceServer
     protected InvoiceRepository $invoiceRepository;
 
     /**
-     * @var RedisFactory|RedisManager
+     * @var RedisFactory|RedisManager|MessagePublisher
      */
     protected RedisFactory $redisFactory;
 
@@ -36,14 +37,39 @@ class InvoiceService implements InvoiceServer
     /**
      * @param string $userId
      * @return InvoiceDetails[]
+     * @throws Throwable
      */
     public function list(string $userId): array
     {
+        $validator = Validator::make(
+            [
+                'userId' => $userId,
+            ],
+            [
+                'userId' => 'required|string|min:1|max:8',
+            ],
+        );
+        if ($validator->fails()) {
+            throw new RuntimeException(implode(PHP_EOL, $validator->errors()->all()));
+        }
+
         return $this->invoiceRepository->findAllBelongsToUser($userId);
     }
 
     public function get(string $invoiceId): InvoiceDetails
     {
+        $validator = Validator::make(
+            [
+                'invoiceId' => $invoiceId,
+            ],
+            [
+                'invoiceId' => 'required|string|min:1|max:8',
+            ],
+        );
+        if ($validator->fails()) {
+            throw new RuntimeException(implode(PHP_EOL, $validator->errors()->all()));
+        }
+
         return $this->invoiceRepository->getSingleById($invoiceId);
     }
 
@@ -236,11 +262,13 @@ class InvoiceService implements InvoiceServer
         $c = 0;
         foreach ($haystack as $item) {
             if (!isset($item[$key])) {
-                throw new RuntimeException(sprintf(
-                    'Item whose index is %d does not have field whose key is %s',
-                    $i,
-                    $key
-                ));
+                throw new RuntimeException(
+                    sprintf(
+                        'Item whose index is %d does not have field whose key is %s',
+                        $i,
+                        $key
+                    )
+                );
             }
             if ($item[$key] === $value) {
                 $c++;

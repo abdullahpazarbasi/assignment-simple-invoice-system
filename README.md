@@ -15,3 +15,14 @@ and then;
 
 
 > To investigate persistent DB state changes [click](http://localhost:8090) ( username: `root` , password: `Pas5w0rd` )
+
+
+----
+
+
+> To run unit tests
+> 
+> ```shell
+> make test
+> ```
+
