@@ -95,10 +95,10 @@ class InvoiceService implements InvoiceServer
                 'subtotalCurrencyCode0' => $subtotalCurrencyCode0,
             ],
             [
-                'userId' => ['string', 'min:1', 'max:8'],
-                'invoiceNumber' => ['string', 'min:2', 'max:20'],
-                'subtotalAmount0' => ['numeric'],
-                'subtotalCurrencyCode0' => ['string', 'min:3', 'max:3'],
+                'userId' => 'required|string|min:1|max:8',
+                'invoiceNumber' => 'required|string|min:2|max:20',
+                'subtotalAmount0' => 'numeric',
+                'subtotalCurrencyCode0' => 'required|string|min:3|max:3',
             ],
         );
         if ($validator->fails()) {
@@ -221,6 +221,8 @@ class InvoiceService implements InvoiceServer
             throw new RuntimeException('Desired invoice does not belong to the user');
         }
         $totals = [];
+        $currencyCode = 'TRY';
+        $totals[$currencyCode] = 0;
         foreach ($invoiceDetails->getItems() as $invoiceItemDetails) {
             $currencyCode = $invoiceItemDetails->getSubtotalCurrencyCode();
             if (!isset($totals[$currencyCode])) {

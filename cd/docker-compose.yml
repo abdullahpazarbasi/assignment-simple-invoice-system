@@ -1,67 +1,85 @@
-version: '3.7'
+version: '3.9'
 
 networks:
-  assignment:
-    driver: bridge
+    assignment:
+        driver: bridge
 
 services:
-  webappphp:
-    build:
-      context: ../
-      dockerfile: cd/webapp/php/Dockerfile
-    container_name: assignment-webapp-php
-    networks:
-      - assignment
-    ports:
-      - 8080:80
-    volumes:
-      - type: bind
-        source: ../
-        target: /var/www/assignment/
-        read_only: false
-    working_dir: /var/www/assignment
-    restart: unless-stopped
-  webappmysql:
-    image: mysql:5.7
-    container_name: assignment-webapp-mysql
-    networks:
-      - assignment
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_DATABASE: assignment
-      MYSQL_ROOT_PASSWORD: Pas5w0rd
-      MYSQL_PASSWORD: Pas5w0rd
-      MYSQL_USER: assignment
-      SERVICE_TAGS: dev
-      SERVICE_NAME: mysql
-    # volumes:
-    #   - ./mysql/my.cnf:/etc/mysql/my.cnf
-    #   - ./mysql/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
-    restart: unless-stopped
-  redis:
-    build:
-      context: ../
-      dockerfile: cd/redis/Dockerfile
-    container_name: assignment-redis
-    networks:
-      - assignment
-    ports:
-      - "6379:6379/tcp"
-    hostname: redis
-    restart: unless-stopped
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: assignment-webapp-phpmyadmin
-    networks:
-      - assignment
-    ports:
-      - "8090:80"
-    environment:
-      PMA_ARBITRARY: 0
-      PMA_HOST: webappmysql
-      PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: Pas5w0rd
-    depends_on:
-      - webappmysql
-    restart: unless-stopped
+    webappphp:
+        build:
+            context: ../
+            dockerfile: cd/webapp/php/Dockerfile
+        container_name: assignment-webapp-php
+        networks:
+            - assignment
+        ports:
+            - "8080:80"
+        volumes:
+            -   type: bind
+                source: ../
+                target: /var/www/assignment/
+                read_only: false
+        working_dir: /var/www/assignment
+        depends_on:
+            webappmysql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        restart: unless-stopped
+    webappmysql:
+        image: mysql:5.7
+        container_name: assignment-webapp-mysql
+        networks:
+            - assignment
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_DATABASE: assignment
+            MYSQL_ROOT_PASSWORD: Pas5w0rd
+            MYSQL_PASSWORD: Pas5w0rd
+            MYSQL_USER: assignment
+            SERVICE_TAGS: dev
+            SERVICE_NAME: mysql
+        # volumes:
+        #   - ./mysql/my.cnf:/etc/mysql/my.cnf
+        #   - ./mysql/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+        restart: unless-stopped
+        healthcheck:
+            test: [ 'CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p$$MYSQL_ROOT_PASSWORD' ]
+            start_period: 5s
+            interval: 5s
+            timeout: 5s
+            retries: 23
+    redis:
+        build:
+            context: ../
+            dockerfile: cd/redis/Dockerfile
+        container_name: assignment-redis
+        networks:
+            - assignment
+        ports:
+            - "6379:6379/tcp"
+        hostname: redis
+        restart: unless-stopped
+        healthcheck:
+            test: [ 'CMD', 'redis-cli', '--raw', 'incr', 'ping', '|', 'grep', 'PONG' ]
+            start_period: 5s
+            interval: 5s
+            timeout: 5s
+            retries: 23
+    phpmyadmin:
+        image: phpmyadmin:latest
+        container_name: assignment-webapp-phpmyadmin
+        networks:
+            - assignment
+        ports:
+            - "8090:80"
+        environment:
+            PMA_ARBITRARY: 0
+            PMA_HOST: webappmysql
+            PMA_PORT: 3306
+            MYSQL_ROOT_PASSWORD: Pas5w0rd
+        depends_on:
+            webappmysql:
+                condition: service_healthy
+        restart: unless-stopped
